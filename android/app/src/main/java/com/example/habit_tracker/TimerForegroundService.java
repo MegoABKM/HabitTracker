@@ -52,24 +52,16 @@ public class TimerForegroundService extends Service {
     }
 
     private void startTimer() {
-        if (isRunning) return;
+        if (isRunning) {
+            // If already running, just update the habit name if needed
+            return;
+        }
         
         isRunning = true;
         createNotificationChannel();
         
         // Start foreground service with initial notification
         startForeground(NOTIFICATION_ID, createNotification());
-        
-        // Update notification every second
-        runnable = new Runnable() {
-            @Override
-            public void run() {
-                elapsedSeconds++;
-                updateNotification();
-                handler.postDelayed(this, 1000); // Update every 1 second
-            }
-        };
-        handler.post(runnable);
     }
 
     private void stopTimer() {
@@ -82,12 +74,16 @@ public class TimerForegroundService extends Service {
     private void updateNotification(String formattedTime) {
         // Update notification with new time
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager != null) {
+        if (manager != null && isRunning) {
+            // Update the notification
             manager.notify(NOTIFICATION_ID, createNotification(formattedTime));
         }
     }
     
     private Notification createNotification(String customTime) {
+        String title = "Timer: " + customTime;
+        String text = "Tracking: " + habitName;
+        
         // Intent for opening app
         Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
         PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -103,15 +99,22 @@ public class TimerForegroundService extends Service {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        return new Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("Timer: " + customTime)
-            .setContentText("Tracking: " + habitName)
+        Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(text)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
-            .setOnlyAlertOnce(true) // Don't vibrate/sound on updates
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPendingIntent)
-            .build();
+            .setOnlyAlertOnce(true)
+            .setPriority(Notification.PRIORITY_LOW)
+            .setShowWhen(false);
+        
+        // Only add stop action when service is running
+        if (isRunning) {
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPendingIntent);
+        }
+        
+        return builder.build();
     }
 
     private Notification createNotification() {
