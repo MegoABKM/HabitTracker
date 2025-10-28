@@ -14,8 +14,12 @@ import 'views/calendar_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize notification service
-  await NotificationService.initialize();
+  // Initialize notification service first
+  try {
+    await NotificationService.initialize();
+  } catch (e) {
+    print('Failed to initialize notification service: $e');
+  }
 
   // Initialize controllers
   Get.put(ThemeController());

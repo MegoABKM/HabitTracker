@@ -1,7 +1,8 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Background Service Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     
     <!-- Overlay Permission -->
@@ -44,12 +45,17 @@
             </intent-filter>
         </activity>
         
-        <!-- Foreground Service -->
+        <!-- Flutter Background Service -->
         <service
-            android:name=".TimerForegroundService"
-            android:enabled="true"
+            android:name="id.flutter.flutter_background_service.BackgroundService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync"
+            tools:replace="android:exported" />
+        
+        <service
+            android:name="id.flutter.flutter_background_service.IsolateHolderService"
+            android:exported="false"
+            tools:replace="android:exported" />
         
         <!-- Boot Receiver for auto-start -->
         <receiver

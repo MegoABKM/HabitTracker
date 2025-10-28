@@ -16,7 +16,6 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val PERMISSIONS_CHANNEL = "com.habit_tracker/permissions"
-    private val TIMER_CHANNEL = "com.habit_tracker/timer"
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -58,53 +57,10 @@ class MainActivity : FlutterActivity() {
             }
         }
         
-        // Timer service channel
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, TIMER_CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "startForegroundService" -> {
-                    val habitName = call.argument<String>("habitName") ?: ""
-                    val elapsedSeconds = call.argument<Int>("elapsedSeconds") ?: 0
-                    startForegroundService(habitName, elapsedSeconds)
-                    result.success(true)
-                }
-                "updateForegroundService" -> {
-                    val habitName = call.argument<String>("habitName") ?: ""
-                    val elapsedTime = call.argument<String>("elapsedTime") ?: ""
-                    updateForegroundService(habitName, elapsedTime)
-                    result.success(true)
-                }
-                "stopForegroundService" -> {
-                    stopForegroundService()
-                    result.success(true)
-                }
-                else -> {
-                    result.notImplemented()
-                }
-            }
-        }
+        // Remove old timer service channel - now using flutter_background_service
     }
     
-    private fun startForegroundService(habitName: String, elapsedSeconds: Int) {
-        val intent = Intent(this, TimerForegroundService::class.java)
-        intent.action = "START"
-        intent.putExtra("habitName", habitName)
-        intent.putExtra("elapsedSeconds", elapsedSeconds)
-        startForegroundService(intent)
-    }
-    
-    private fun updateForegroundService(habitName: String, elapsedTime: String) {
-        val intent = Intent(this, TimerForegroundService::class.java)
-        intent.action = "UPDATE"
-        intent.putExtra("habitName", habitName)
-        intent.putExtra("elapsedTime", elapsedTime)
-        startService(intent)
-    }
-    
-    private fun stopForegroundService() {
-        val intent = Intent(this, TimerForegroundService::class.java)
-        intent.action = "STOP"
-        startService(intent)
-    }
+    // Old native service methods removed - now using flutter_background_service
 
     private fun requestOverlayPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
