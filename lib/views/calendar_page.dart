@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../controllers/habit_controller.dart';
 import '../services/database_service.dart';
+import '../utils/translation_helper.dart';
 
 /// Calendar page showing daily habits with time
 class CalendarPage extends StatefulWidget {
@@ -41,7 +42,7 @@ class _CalendarPageState extends State<CalendarPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Calendar')),
+      appBar: AppBar(title: Text('calendar'.tr)),
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -54,7 +55,10 @@ class _CalendarPageState extends State<CalendarPage> {
                     selectedDayPredicate:
                         (day) => isSameDay(selectedDay.value, day),
                     onDaySelected: (selected, focused) {
-                      selectedDay.value = selected;
+                      setState(() {
+                        selectedDay.value = selected;
+                        focusedDay = focused;
+                      });
                     },
                     onPageChanged: (focused) {
                       setState(() => focusedDay = focused);
@@ -142,7 +146,7 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No habits completed',
+              'noHabitsCompleted'.tr,
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.5),
               ),
@@ -180,7 +184,7 @@ class _CalendarPageState extends State<CalendarPage> {
                 Icon(Icons.access_time, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Total: $totalTime minutes',
+                  'totalMinutes'.trWithParams({'minutes': '$totalTime'}),
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -217,13 +221,13 @@ class _CalendarPageState extends State<CalendarPage> {
           habitName,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('Completed habit'),
+        subtitle: Text('completedHabit'.tr),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '$timeSpent min',
+              'minUnit'.trWithParams({'minutes': '$timeSpent'}),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.primary,

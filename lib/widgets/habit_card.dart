@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../models/habit_model.dart';
 import '../controllers/habit_controller.dart';
 import '../controllers/timer_controller.dart';
+import '../utils/translation_helper.dart';
 
 /// Widget for displaying a habit card with progress and streak
 class HabitCard extends StatelessWidget {
@@ -16,7 +17,6 @@ class HabitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final timerController = Get.find<TimerController>();
-    final isTimerRunning = timerController.isTimerRunningFor(habit.id);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -179,165 +179,191 @@ class HabitCard extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Timer Section
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color:
-                        isTimerRunning
-                            ? const Color(0xFF6C63FF).withOpacity(0.1)
-                            : theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+                Obx(() {
+                  final isRunning =
+                      timerController.currentHabitId.value == habit.id;
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
                       color:
-                          isTimerRunning
-                              ? const Color(0xFF6C63FF).withOpacity(0.3)
-                              : Colors.transparent,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isTimerRunning ? 'Timer Running' : 'Quick Timer',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                          isRunning
+                              ? const Color(0xFF6C63FF).withOpacity(0.1)
+                              : theme.colorScheme.surfaceVariant.withOpacity(
+                                0.3,
                               ),
-                            ),
-                            if (isTimerRunning) ...[
-                              const SizedBox(height: 4),
-                              Obx(() {
-                                final timerController =
-                                    Get.find<TimerController>();
-                                return Text(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color:
+                            isRunning
+                                ? const Color(0xFF6C63FF).withOpacity(0.3)
+                                : Colors.transparent,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isRunning ? 'timerRunning'.tr : 'quickTimer'.tr,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (isRunning) ...[
+                                const SizedBox(height: 4),
+                                Text(
                                   timerController.getFormattedTime(),
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     color: const Color(0xFF6C63FF),
                                     fontWeight: FontWeight.bold,
                                   ),
-                                );
-                              }),
+                                ),
+                              ],
                             ],
-                          ],
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          if (isTimerRunning) {
-                            await timerController.stopTimer();
-                          } else {
-                            await timerController.startTimer(habit.id!);
-                          }
-                        },
-                        icon: Icon(
-                          isTimerRunning ? Icons.stop : Icons.play_arrow,
-                        ),
-                        label: Text(isTimerRunning ? 'Stop' : 'Start'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              isTimerRunning
-                                  ? Colors.red
-                                  : const Color(0xFF6C63FF),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            if (isRunning) {
+                              await timerController.stopTimer();
+                            } else {
+                              await timerController.startTimer(habit.id!);
+                            }
+                          },
+                          icon: Icon(isRunning ? Icons.stop : Icons.play_arrow),
+                          label: Text(isRunning ? 'stop'.tr : 'start'.tr),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isRunning
+                                    ? Colors.red
+                                    : const Color(0xFF6C63FF),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
 
                 if (habit.targetMinutes != null ||
                     habit.timeSpentToday > 0) ...[
                   const SizedBox(height: 12),
-                  // Time Tracking Section
-                  Column(
+                  // Time Tracking Section (realtime with running timer)
+                  Obx(() {
+                    final isRunning =
+                        timerController.currentHabitId.value == habit.id;
+                    final liveElapsedSeconds =
+                        isRunning ? timerController.getElapsedSeconds() : 0;
+                    final liveExtraMinutes = liveElapsedSeconds ~/ 60;
+                    final todayMinutes =
+                        habit.timeSpentToday + liveExtraMinutes;
+                    final target = habit.targetMinutes ?? 0;
+                    final percent =
+                        target > 0
+                            ? (todayMinutes / target).clamp(0.0, 1.0)
+                            : 0.0;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'timeSpentToday'.tr,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                            if (habit.timeSpentToday == 0)
+                              IconButton(
+                                icon: Icon(
+                                  Icons.add_circle_outline,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                onPressed: () => _showTimeDialog(theme, habit),
+                                tooltip: 'addTime'.tr,
+                                constraints: const BoxConstraints(),
+                                padding: EdgeInsets.zero,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: LinearProgressIndicator(
+                                value: percent,
+                                backgroundColor:
+                                    theme.colorScheme.surfaceVariant,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.colorScheme.tertiary,
+                                ),
+                                minHeight: 8,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${'minUnit'.trWithParams({'minutes': '$todayMinutes'})} / ${'minUnit'.trWithParams({'minutes': '${habit.targetMinutes ?? 0}'})}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  }),
+                ],
+
+                const SizedBox(height: 12),
+
+                // Progress Bar (derive from target minutes for consistency)
+                Obx(() {
+                  final isRunning =
+                      timerController.currentHabitId.value == habit.id;
+                  final liveElapsedSeconds =
+                      isRunning ? timerController.getElapsedSeconds() : 0;
+                  final liveExtraMinutes = liveElapsedSeconds ~/ 60;
+                  final target = habit.targetMinutes ?? 0;
+                  final todayMinutes = habit.timeSpentToday + liveExtraMinutes;
+                  final progress =
+                      target > 0
+                          ? (todayMinutes / target).clamp(0.0, 1.0)
+                          : 0.0;
+                  final percentText = (progress * 100).toInt();
+
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          Text('progress'.tr, style: theme.textTheme.bodySmall),
                           Text(
-                            'Time Spent Today',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                          if (habit.timeSpentToday == 0)
-                            IconButton(
-                              icon: Icon(
-                                Icons.add_circle_outline,
-                                color: theme.colorScheme.primary,
-                              ),
-                              onPressed: () => _showTimeDialog(theme, habit),
-                              tooltip: 'Add Time',
-                              constraints: const BoxConstraints(),
-                              padding: EdgeInsets.zero,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: LinearProgressIndicator(
-                              value:
-                                  habit.targetMinutes != null
-                                      ? (habit.timeSpentToday /
-                                              habit.targetMinutes!)
-                                          .clamp(0.0, 1.0)
-                                      : 0.0,
-                              backgroundColor: theme.colorScheme.surfaceVariant,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                theme.colorScheme.tertiary,
-                              ),
-                              minHeight: 8,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${habit.timeSpentToday} / ${habit.targetMinutes ?? 0} min',
+                            '$percentText%',
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ],
-
-                const SizedBox(height: 12),
-
-                // Progress Bar
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Progress', style: theme.textTheme.bodySmall),
-                        Text(
-                          '${(habit.progress * 100).toInt()}%',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: theme.colorScheme.surfaceVariant,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          theme.colorScheme.primary,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    LinearProgressIndicator(
-                      value: habit.progress,
-                      backgroundColor: theme.colorScheme.surfaceVariant,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        theme.colorScheme.primary,
+                        minHeight: 8,
                       ),
-                      minHeight: 8,
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                }),
               ],
             ),
           ),

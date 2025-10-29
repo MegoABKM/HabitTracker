@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../controllers/habit_controller.dart';
 
@@ -13,6 +14,12 @@ class ProgressChart extends StatelessWidget {
     final theme = Theme.of(context);
     final stats = controller.stats;
     final weeklyData = stats['weeklyData'] as List<Map<String, dynamic>>;
+    final maxMinutes =
+        weeklyData.isNotEmpty
+            ? weeklyData
+                .map((d) => (d['minutes'] as int? ?? 0))
+                .reduce((a, b) => a > b ? a : b)
+            : 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -20,7 +27,7 @@ class ProgressChart extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            'Weekly Progress',
+            'weeklyProgress'.tr,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -35,7 +42,10 @@ class ProgressChart extends StatelessWidget {
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: false,
-                horizontalInterval: 1,
+                horizontalInterval:
+                    maxMinutes > 0
+                        ? (maxMinutes / 4).clamp(1, double.infinity).toDouble()
+                        : 1,
                 getDrawingHorizontalLine: (value) {
                   return FlLine(
                     color: theme.colorScheme.outline.withOpacity(0.2),
@@ -65,7 +75,17 @@ class ProgressChart extends StatelessWidget {
                   ),
                 ),
                 leftTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      if (value < 0) return const SizedBox.shrink();
+                      return Text(
+                        '${value.toInt()}m',
+                        style: theme.textTheme.bodySmall,
+                      );
+                    },
+                  ),
                 ),
                 rightTitles: AxisTitles(
                   sideTitles: SideTitles(showTitles: false),
@@ -82,21 +102,17 @@ class ProgressChart extends StatelessWidget {
                   ),
                 ),
               ),
+              maxY: (maxMinutes > 0 ? maxMinutes.toDouble() : 10),
               barGroups:
                   weeklyData.asMap().entries.map((entry) {
                     final index = entry.key;
                     final data = entry.value;
-                    // Use a random value for demonstration - in real app, use actual completion data
-                    final completed = data['completed'] as int;
-                    final maxHabits = stats['totalHabits'] as int;
-                    final progress =
-                        maxHabits > 0 ? (completed / maxHabits) : 0.0;
-
+                    final minutes = (data['minutes'] as int? ?? 0).toDouble();
                     return BarChartGroupData(
                       x: index,
                       barRods: [
                         BarChartRodData(
-                          toY: progress.clamp(0.0, 1.0),
+                          toY: minutes,
                           color: theme.colorScheme.primary,
                           width: 20,
                           borderRadius: const BorderRadius.only(
@@ -121,7 +137,7 @@ class ProgressChart extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   theme,
-                  'Total Habits',
+                  'totalHabits'.tr,
                   '${stats['totalHabits']}',
                   Icons.list,
                   Colors.blue,
@@ -131,7 +147,7 @@ class ProgressChart extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   theme,
-                  'Completed Today',
+                  'completedToday'.tr,
                   '${stats['completedToday']}',
                   Icons.check_circle,
                   Colors.green,
@@ -150,7 +166,7 @@ class ProgressChart extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   theme,
-                  'Avg Progress',
+                  'avgProgress'.tr,
                   '${(stats['averageProgress'] * 100).toStringAsFixed(0)}%',
                   Icons.trending_up,
                   Colors.orange,
@@ -160,7 +176,7 @@ class ProgressChart extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   theme,
-                  'Avg Streak',
+                  'avgStreak'.tr,
                   '${stats['averageStreak'].toStringAsFixed(0)} days',
                   Icons.local_fire_department,
                   Colors.red,

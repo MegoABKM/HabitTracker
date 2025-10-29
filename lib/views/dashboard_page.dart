@@ -4,10 +4,24 @@ import 'package:get/get.dart';
 import '../controllers/habit_controller.dart';
 import '../controllers/timer_controller.dart';
 import '../widgets/habit_card.dart';
+import '../utils/translation_helper.dart';
 
 /// Dashboard page showing all habits
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  late final int _quoteIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _quoteIndex = DateTime.now().millisecondsSinceEpoch % 20 + 1;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +127,7 @@ class DashboardPage extends StatelessWidget {
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                'Habit Tracker Time',
+                'appTitle'.tr,
                 style: TextStyle(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
@@ -122,14 +136,13 @@ class DashboardPage extends StatelessWidget {
                 ),
               ),
               background: Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                     colors: [
-                      const Color(0xFF6C63FF),
-                      const Color(0xFF9F7AFF),
-                      const Color(0xFF7C4DFF),
+                      Color(0xFF6E56CF), // Brand Primary Violet
+                      Color(0xFF8B6EFF), // Lighter Violet
                     ],
                   ),
                 ),
@@ -139,17 +152,17 @@ class DashboardPage extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.calendar_today),
                 onPressed: () => Get.toNamed('/calendar'),
-                tooltip: 'Calendar',
+                tooltip: 'calendar'.tr,
               ),
               IconButton(
                 icon: const Icon(Icons.analytics_outlined),
                 onPressed: () => Get.toNamed('/analytics'),
-                tooltip: 'Analytics',
+                tooltip: 'analytics'.tr,
               ),
               IconButton(
                 icon: const Icon(Icons.settings_outlined),
                 onPressed: () => Get.toNamed('/settings'),
-                tooltip: 'Settings',
+                tooltip: 'settings'.tr,
               ),
             ],
           ),
@@ -191,7 +204,7 @@ class DashboardPage extends StatelessWidget {
                   SizedBox(width: 16.w),
                   Expanded(
                     child: Text(
-                      _getMotivationalQuote(),
+                      _localizedQuote(_quoteIndex),
                       style: TextStyle(
                         fontSize: 14.sp,
                         fontStyle: FontStyle.italic,
@@ -258,14 +271,17 @@ class DashboardPage extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Today\'s Progress',
+                                      'todaysProgress'.tr,
                                       style: TextStyle(
                                         fontSize: 12.sp,
                                         color: Colors.white.withOpacity(0.9),
                                       ),
                                     ),
                                     Text(
-                                      '$completed of $total',
+                                      'ofCount'.trWithParams({
+                                        'completed': '$completed',
+                                        'total': '$total',
+                                      }),
                                       style: TextStyle(
                                         fontSize: 20.sp,
                                         color: Colors.white,
@@ -300,7 +316,7 @@ class DashboardPage extends StatelessWidget {
                             theme,
                             Icons.access_time,
                             '$totalTimeToday min',
-                            'Today',
+                            'today'.tr,
                             const Color(0xFFFF6B9D),
                           ),
                         ),
@@ -310,7 +326,7 @@ class DashboardPage extends StatelessWidget {
                             theme,
                             Icons.timeline,
                             '${controller.habits.fold<int>(0, (sum, h) => sum + h.totalTimeSpent)} min',
-                            'Total',
+                            'total'.tr,
                             const Color(0xFF4CAF50),
                           ),
                         ),
@@ -329,7 +345,7 @@ class DashboardPage extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
-                'Your Habits',
+                'appTitle'.tr,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -383,6 +399,9 @@ class DashboardPage extends StatelessWidget {
               }, childCount: controller.habits.length),
             );
           }),
+
+          // Spacer to avoid FAB overlapping content
+          const SliverToBoxAdapter(child: SizedBox(height: 88)),
         ],
       ),
 
@@ -390,7 +409,7 @@ class DashboardPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Get.toNamed('/add-habit'),
         icon: const Icon(Icons.add),
-        label: const Text('New Habit'),
+        label: Text('newHabit'.tr),
       ),
     );
   }
@@ -439,15 +458,48 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  String _getMotivationalQuote() {
-    final quotes = [
-      'Success is the sum of small efforts repeated day in and day out.',
-      'The way to get started is to quit talking and begin doing.',
-      'Don\'t watch the clock; do what it does. Keep going.',
-      'The future depends on what you do today.',
-      'It does not matter how slowly you go as long as you do not stop.',
-      'Small progress is still progress.',
-    ];
-    return quotes[DateTime.now().day % quotes.length];
+  String _localizedQuote(int index) {
+    switch (index) {
+      case 1:
+        return 'quote_1'.tr;
+      case 2:
+        return 'quote_2'.tr;
+      case 3:
+        return 'quote_3'.tr;
+      case 4:
+        return 'quote_4'.tr;
+      case 5:
+        return 'quote_5'.tr;
+      case 6:
+        return 'quote_6'.tr;
+      case 7:
+        return 'quote_7'.tr;
+      case 8:
+        return 'quote_8'.tr;
+      case 9:
+        return 'quote_9'.tr;
+      case 10:
+        return 'quote_10'.tr;
+      case 11:
+        return 'quote_11'.tr;
+      case 12:
+        return 'quote_12'.tr;
+      case 13:
+        return 'quote_13'.tr;
+      case 14:
+        return 'quote_14'.tr;
+      case 15:
+        return 'quote_15'.tr;
+      case 16:
+        return 'quote_16'.tr;
+      case 17:
+        return 'quote_17'.tr;
+      case 18:
+        return 'quote_18'.tr;
+      case 19:
+        return 'quote_19'.tr;
+      default:
+        return 'quote_20'.tr;
+    }
   }
 }

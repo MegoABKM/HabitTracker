@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../controllers/habit_controller.dart';
 import '../widgets/progress_chart.dart';
+import '../utils/translation_helper.dart';
 
 /// Analytics page showing charts and statistics
 class AnalyticsPage extends StatefulWidget {
@@ -38,7 +39,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     final controller = Get.find<HabitController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Analytics')),
+      appBar: AppBar(title: Text('analytics'.tr)),
       body: Obx(() {
         return RefreshIndicator(
           onRefresh: () async {
@@ -50,11 +51,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               // Header
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                     colors: [
-                      theme.colorScheme.primaryContainer,
-                      theme.colorScheme.secondaryContainer,
+                      Color(0xFF6E56CF), // Brand Primary Violet
+                      Color(0xFF8B6EFF), // Lighter Violet
                     ],
                   ),
                 ),
@@ -67,14 +70,14 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Your Progress Overview',
+                      'yourProgressOverview'.tr,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Track your habits and build consistency',
+                      'trackConsistency'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
@@ -144,7 +147,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Time Spent by Habit (Last 7 Days)',
+            'timeByHabitLast7'.tr,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -156,6 +159,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               BarChartData(
                 gridData: FlGridData(show: false),
                 borderData: FlBorderData(show: true),
+                maxY: maxTime.toDouble(),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -206,14 +210,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     sortedEntries.asMap().entries.map((entry) {
                       final index = entry.key;
                       final habitEntry = entry.value;
-                      final progress =
-                          maxTime > 0 ? habitEntry.value / maxTime : 0.0;
-
                       return BarChartGroupData(
                         x: index,
                         barRods: [
                           BarChartRodData(
-                            toY: progress.clamp(0.0, 1.0),
+                            toY: habitEntry.value.toDouble(),
                             color: theme.colorScheme.tertiary,
                             width: 20,
                             borderRadius: const BorderRadius.only(
@@ -243,7 +244,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     ),
                   ),
                   Text(
-                    '${entry.value} min',
+                    'minUnit'.trWithParams({'minutes': '${entry.value}'}),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -288,7 +289,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 color: Colors.orange,
               ),
             ),
-            Text('days', style: theme.textTheme.bodySmall),
+            Text('daysLabel'.tr, style: theme.textTheme.bodySmall),
           ],
         ),
       ),

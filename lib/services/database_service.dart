@@ -255,43 +255,64 @@ class DatabaseService {
   Future<Map<String, dynamic>> getCompletionStats() async {
     final habits = await getAllHabits();
 
-    if (habits.isEmpty) {
-      return {
-        'totalHabits': 0,
-        'completedToday': 0,
-        'averageProgress': 0.0,
-        'averageStreak': 0.0,
-        'weeklyData': <Map<String, dynamic>>[],
-        'streakTrends': <Map<String, dynamic>>[],
-      };
+    final totalHabits = habits.length;
+    final completedToday = habits.where((h) => h.isCompletedToday).length;
+
+    // Compute average progress based on targetMinutes vs timeSpentToday when available
+    double sumProgress = 0.0;
+    int countWithTargets = 0;
+    for (final h in habits) {
+      if (h.targetMinutes != null && h.targetMinutes! > 0) {
+        final p = (h.timeSpentToday / h.targetMinutes!).clamp(0.0, 1.0);
+        sumProgress += p;
+        countWithTargets++;
+      }
+    }
+    final averageProgress =
+        countWithTargets > 0 ? (sumProgress / countWithTargets) : 0.0;
+
+    final averageStreak =
+        habits.isNotEmpty
+            ? habits.fold<double>(0.0, (sum, h) => sum + h.streak) /
+                habits.length
+            : 0.0;
+
+    // Weekly minutes from completion_history (last 7 days)
+    final now = DateTime.now();
+    final start = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: 6));
+    final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    final rows = await getCompletionHistory(start, end);
+
+    final Map<String, int> dateToMinutes = {};
+    for (final row in rows) {
+      final dateStr = (row['completion_date'] as String).split('T').first;
+      final minutes = (row['time_spent'] as int?) ?? 0;
+      dateToMinutes.update(
+        dateStr,
+        (v) => v + minutes,
+        ifAbsent: () => minutes,
+      );
     }
 
-    final completedToday = habits.where((h) => h.isCompletedToday).length;
-    final averageProgress =
-        habits.fold<double>(0.0, (sum, h) => sum + h.progress) / habits.length;
-    final averageStreak =
-        habits.fold<double>(0.0, (sum, h) => sum + h.streak) / habits.length;
-
-    // Generate weekly data (last 7 days)
-    final weeklyData = List.generate(7, (index) {
-      final date = DateTime.now().subtract(Duration(days: 6 - index));
-      return {
-        'date': date,
-        'day': _getDayName(date.weekday),
-        'completed':
-            habits
-                .length, // Placeholder - you can enhance this with actual completion data per day
-      };
+    final weeklyData = List.generate(7, (i) {
+      final day = start.add(Duration(days: i));
+      final key = day.toIso8601String().split('T').first;
+      final minutes = dateToMinutes[key] ?? 0;
+      return {'date': day, 'day': _getDayName(day.weekday), 'minutes': minutes};
     });
 
-    // Generate streak trends (last 7 days of streak data)
     final streakTrends =
         habits
             .map((habit) => {'name': habit.name, 'streak': habit.streak})
             .toList();
 
     return {
-      'totalHabits': habits.length,
+      'totalHabits': totalHabits,
       'completedToday': completedToday,
       'averageProgress': averageProgress,
       'averageStreak': averageStreak,
@@ -321,7 +342,7 @@ class DatabaseService {
       final newTimeSpentToday = habit.timeSpentToday + minutes;
       final newTotalTimeSpent = habit.totalTimeSpent + minutes;
 
-      return await db.update(
+      final result = await db.update(
         'habits',
         {
           'timeSpentToday': newTimeSpentToday,
@@ -330,6 +351,17 @@ class DatabaseService {
         where: 'id = ?',
         whereArgs: [id],
       );
+
+      // Also upsert today's completion history so calendar and totals stay in sync
+      final todayStr =
+          DateTime(
+            DateTime.now().year,
+            DateTime.now().month,
+            DateTime.now().day,
+          ).toIso8601String();
+      await _saveCompletionHistory(id, todayStr, newTimeSpentToday);
+
+      return result;
     }
     return 0;
   }

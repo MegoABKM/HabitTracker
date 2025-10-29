@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/habit_controller.dart';
 import '../controllers/theme_controller.dart';
 import '../services/database_service.dart';
@@ -14,11 +15,80 @@ class SettingsPage extends StatelessWidget {
     final theme = Theme.of(context);
     final habitController = Get.find<HabitController>();
     final themeController = Get.find<ThemeController>();
+    final currentLocale = Get.locale ?? Get.deviceLocale ?? const Locale('en');
+    final supported = const [
+      Locale('en'),
+      Locale('es'),
+      Locale('fr'),
+      Locale('de'),
+      Locale('ar'),
+      Locale('pt'),
+      Locale('hi'),
+      Locale('tr'),
+      Locale('id'),
+      Locale('ru'),
+      Locale('zh'),
+      Locale('ja'),
+      Locale('ko'),
+    ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text('settingsTitle'.tr)),
       body: ListView(
         children: [
+          // Language Section
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'language'.tr,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<Locale>(
+                  value: supported.firstWhere(
+                    (l) => l.languageCode == currentLocale.languageCode,
+                    orElse: () => const Locale('en'),
+                  ),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                  items:
+                      supported
+                          .map(
+                            (l) => DropdownMenuItem(
+                              value: l,
+                              child: Text(_localeLabel(l)),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (l) async {
+                    if (l == null) return;
+                    Get.updateLocale(l);
+                    try {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setString('app_locale', l.languageCode);
+                    } catch (_) {}
+                    Get.snackbar(
+                      'language'.tr,
+                      '${'changedTo'.tr} ${_localeLabel(l)}',
+                      snackPosition: SnackPosition.BOTTOM,
+                      duration: const Duration(seconds: 2),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
           // Permissions Section
           Container(
             margin: const EdgeInsets.all(16),
@@ -59,13 +129,13 @@ class SettingsPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Background Permissions',
+                            'backgroundPermissions'.tr,
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            'Required for time tracking',
+                            'requiredForTimeTracking'.tr,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withOpacity(
                                 0.6,
@@ -83,14 +153,14 @@ class SettingsPage extends StatelessWidget {
                     await PermissionHandler.requestOverlayPermission();
                     await PermissionHandler.requestIgnoreBatteryOptimization();
                     Get.snackbar(
-                      'Permissions',
-                      'Check system settings if needed',
+                      'backgroundPermissions'.tr,
+                      'requiredForTimeTracking'.tr,
                       snackPosition: SnackPosition.BOTTOM,
                       duration: const Duration(seconds: 2),
                     );
                   },
                   icon: const Icon(Icons.check_circle),
-                  label: const Text('Grant All Permissions'),
+                  label: Text('grantAllPermissions'.tr),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                   ),
@@ -111,7 +181,7 @@ class SettingsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Appearance',
+                  'appearance'.tr,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -121,9 +191,9 @@ class SettingsPage extends StatelessWidget {
                   () => SwitchListTile(
                     value: themeController.isDarkMode.value,
                     onChanged: (value) => themeController.toggleTheme(),
-                    title: const Text('Dark Mode'),
+                    title: Text('darkMode'.tr),
                     subtitle: Text(
-                      themeController.isDarkMode.value ? 'Dark' : 'Light',
+                      themeController.isDarkMode.value ? 'dark'.tr : 'light'.tr,
                     ),
                     secondary: Icon(
                       themeController.isDarkMode.value
@@ -148,7 +218,7 @@ class SettingsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Data Management',
+                  'dataManagement'.tr,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -161,8 +231,8 @@ class SettingsPage extends StatelessWidget {
                     Icons.delete_sweep,
                     color: theme.colorScheme.error,
                   ),
-                  title: const Text('Clear All Data'),
-                  subtitle: const Text('Delete all habits and history'),
+                  title: Text('clearAllData'.tr),
+                  subtitle: Text('deleteAll'.tr),
                   trailing: Icon(
                     Icons.chevron_right,
                     color: theme.colorScheme.onSurface.withOpacity(0.3),
@@ -170,10 +240,8 @@ class SettingsPage extends StatelessWidget {
                   onTap: () async {
                     final confirmed = await Get.dialog<bool>(
                       AlertDialog(
-                        title: const Text('Clear All Data'),
-                        content: const Text(
-                          'Are you sure you want to delete all habits and their history? This action cannot be undone.',
-                        ),
+                        title: Text('clearAllData'.tr),
+                        content: Text('areYouSureDeleteAll'.tr),
                         actions: [
                           TextButton(
                             onPressed: () => Get.back(result: false),
@@ -184,7 +252,7 @@ class SettingsPage extends StatelessWidget {
                             style: TextButton.styleFrom(
                               foregroundColor: theme.colorScheme.error,
                             ),
-                            child: const Text('Delete All'),
+                            child: Text('deleteAll'.tr),
                           ),
                         ],
                       ),
@@ -195,8 +263,8 @@ class SettingsPage extends StatelessWidget {
                       await habitController.loadHabits();
                       Get.back();
                       Get.snackbar(
-                        'Deleted',
-                        'All habits have been cleared',
+                        'deleted'.tr,
+                        'allHabitsCleared'.tr,
                         snackPosition: SnackPosition.BOTTOM,
                         duration: const Duration(seconds: 2),
                       );
@@ -221,7 +289,7 @@ class SettingsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'About',
+                  'about'.tr,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -232,7 +300,7 @@ class SettingsPage extends StatelessWidget {
                     Icons.info_outline,
                     color: theme.colorScheme.primary,
                   ),
-                  title: const Text('Version'),
+                  title: Text('version'.tr),
                   subtitle: const Text('1.0.0'),
                 ),
                 ListTile(
@@ -240,10 +308,8 @@ class SettingsPage extends StatelessWidget {
                     Icons.description_outlined,
                     color: theme.colorScheme.primary,
                   ),
-                  title: const Text('Description'),
-                  subtitle: const Text(
-                    'Track your habits and build consistency',
-                  ),
+                  title: Text('description'.tr),
+                  subtitle: Text('trackConsistency'.tr),
                 ),
               ],
             ),
@@ -253,5 +319,38 @@ class SettingsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+String _localeLabel(Locale l) {
+  switch (l.languageCode) {
+    case 'en':
+      return 'English';
+    case 'es':
+      return 'Español';
+    case 'fr':
+      return 'Français';
+    case 'de':
+      return 'Deutsch';
+    case 'ar':
+      return 'العربية';
+    case 'pt':
+      return 'Português';
+    case 'hi':
+      return 'हिन्दी';
+    case 'tr':
+      return 'Türkçe';
+    case 'id':
+      return 'Bahasa Indonesia';
+    case 'ru':
+      return 'Русский';
+    case 'zh':
+      return '中文';
+    case 'ja':
+      return '日本語';
+    case 'ko':
+      return '한국어';
+    default:
+      return l.languageCode;
   }
 }

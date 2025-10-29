@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'habit_controller.dart';
 import '../models/habit_model.dart'; // FIX: Import HabitModel for safer lookup
 import '../services/notification_service.dart';
+import '../services/session_service.dart';
 
 /// Controller for managing active timers
 class TimerController extends GetxController {
@@ -70,6 +71,14 @@ class TimerController extends GetxController {
       return;
     }
 
+    // Persist session intent so we can recover after termination
+    final startEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    await SessionService.startSession(
+      habitId: habit.id!,
+      habitName: habit.name,
+      startEpochSeconds: startEpoch,
+    );
+
     // FIX: The UI-thread timer is removed. We now start the reliable background service.
     await NotificationService.startTimer(
       habitId: habit.id!,
@@ -97,6 +106,8 @@ class TimerController extends GetxController {
     //   _timer = null;
     // }
 
+    // Clear persisted session and stop service
+    await SessionService.clearSession();
     // FIX: Tell the background service to stop.
     await NotificationService.stopTimer();
 
@@ -173,6 +184,24 @@ class TimerController extends GetxController {
     // _timer?.cancel();
     NotificationService.cancelAll();
     super.onClose();
+  }
+
+  /// Resume from a saved session if present (used on app launch).
+  Future<void> resumeFromSavedSession() async {
+    final session = await SessionService.getActiveSession();
+    if (session == null) return;
+
+    currentHabitId.value = session.habitId;
+    // Compute elapsed based on stored start epoch
+    final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final elapsed = (nowEpoch - session.startEpochSeconds).clamp(0, 1 << 30);
+    elapsedSeconds.value = elapsed;
+
+    await NotificationService.startTimer(
+      habitId: session.habitId,
+      habitName: session.habitName,
+      elapsedSeconds: elapsed,
+    );
   }
 
   /// FIX: This method is now redundant. The background service handles all notifications.

@@ -101,7 +101,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Habit' : 'Add New Habit'),
+        title: Text(_isEditing ? 'updateHabit'.tr : 'addNewHabit'.tr),
         actions: [
           if (_isEditing)
             IconButton(
@@ -109,10 +109,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
               onPressed: () async {
                 final confirmed = await Get.dialog<bool>(
                   AlertDialog(
-                    title: const Text('Delete Habit'),
-                    content: const Text(
-                      'Are you sure you want to delete this habit? This action cannot be undone.',
-                    ),
+                    title: Text('deleteAll'.tr),
+                    content: Text('areYouSureDeleteAll'.tr),
                     actions: [
                       TextButton(
                         onPressed: () => Get.back(result: false),
@@ -123,7 +121,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                         style: TextButton.styleFrom(
                           foregroundColor: theme.colorScheme.error,
                         ),
-                        child: const Text('Delete'),
+                        child: Text('deleteAll'.tr),
                       ),
                     ],
                   ),
@@ -133,8 +131,8 @@ class _AddHabitPageState extends State<AddHabitPage> {
                   await controller.deleteHabit(_editingHabit!.id!);
                   Get.back();
                   Get.snackbar(
-                    'Deleted',
-                    'Habit deleted successfully',
+                    'deleted'.tr,
+                    'completedHabit'.tr,
                     snackPosition: SnackPosition.BOTTOM,
                     duration: const Duration(seconds: 2),
                   );
@@ -151,15 +149,15 @@ class _AddHabitPageState extends State<AddHabitPage> {
             // Habit Name Field
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Habit Name',
-                hintText: 'e.g., Exercise, Read, Meditate',
+              decoration: InputDecoration(
+                labelText: 'habitName'.tr,
+                hintText: 'habitName'.tr,
                 prefixIcon: Icon(Icons.label),
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a habit name';
+                  return 'pleaseEnterHabitName'.tr;
                 }
                 return null;
               },
@@ -170,17 +168,17 @@ class _AddHabitPageState extends State<AddHabitPage> {
 
             // Frequency Dropdown
             Text(
-              'Frequency',
+              'frequency'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
             SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'Daily', label: Text('Daily')),
-                ButtonSegment(value: 'Weekly', label: Text('Weekly')),
-                ButtonSegment(value: 'Custom', label: Text('Custom')),
+              segments: [
+                ButtonSegment(value: 'Daily', label: Text('daily'.tr)),
+                ButtonSegment(value: 'Weekly', label: Text('weekly'.tr)),
+                ButtonSegment(value: 'Custom', label: Text('custom'.tr)),
               ],
               selected: {_selectedFrequency},
               onSelectionChanged: (Set<String> newSelection) {
@@ -195,19 +193,19 @@ class _AddHabitPageState extends State<AddHabitPage> {
             // Target Time Field (Optional)
             TextFormField(
               controller: _targetMinutesController,
-              decoration: const InputDecoration(
-                labelText: 'Target Time (minutes)',
-                hintText: 'e.g., 30',
-                prefixIcon: Icon(Icons.timer),
-                border: OutlineInputBorder(),
-                helperText: 'Optional: Set a daily time target',
+              decoration: InputDecoration(
+                labelText: 'targetMinutes'.tr,
+                hintText: 'targetMinutes'.tr,
+                prefixIcon: const Icon(Icons.timer),
+                border: const OutlineInputBorder(),
+                helperText: 'optionalDailyTarget'.tr,
               ),
               keyboardType: TextInputType.number,
               validator: (value) {
                 if (value != null && value.trim().isNotEmpty) {
                   final minutes = int.tryParse(value.trim());
                   if (minutes == null || minutes <= 0) {
-                    return 'Please enter a valid positive number';
+                    return 'pleaseEnterValidNumber'.tr;
                   }
                 }
                 return null;
@@ -226,7 +224,7 @@ class _AddHabitPageState extends State<AddHabitPage> {
                 ),
               ),
               child: Text(
-                _isEditing ? 'Update Habit' : 'Save Habit',
+                _isEditing ? 'updateHabit'.tr : 'saveHabit'.tr,
                 style: const TextStyle(fontSize: 16),
               ),
             ),
